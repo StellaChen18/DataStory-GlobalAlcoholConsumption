@@ -1,0 +1,288 @@
+---
+title: "Global Alcohol Consumption"
+author: "Yunzhi Chen"
+date: "`r Sys.Date()`"
+execute: 
+  echo: false
+  warning: false
+  message: false
+  error: false
+format: 
+  html:
+    toc: true
+    code-fold: true
+    css: 02-custom.css
+theme: Quartz  
+---
+
+## Introduction
+Alcohol occupies an important place in the culture of many countries and is consumed in a wide range of social environments. In fact, alcohol is commonly understood as the beverages we drink and contains types such as: beer, wine and spirits. However, these drinks are made up of many different chemicals, including water, sugar and alcohol. Alcohol refers to the chemical ethanol. Ethanol is the drug component that makes people feel relaxed or intoxicated. 
+
+In its report, WHO (2022) states that alcohol is a psychoactive substance that has the ability to produce dependence and has been widely used in many cultures for centuries. This blog attempts to tell a data story about global alcohol consumption by analyzing data on the consumption of beer, wine and spirits in various countries around the world.
+
+## Data description
+
+The alcohol consumption data shows the beer, spirit and wine consumption and total litres of pure alcohol by country, which is collected by Thomas Mock (2022). The data link is here: [**Tidy Tuesday: A weekly data project aimed at the R ecosystem.**](https://github.com/rfordatascience/tidytuesday/blob/master/data/2018/2018-06-26). It has the dimension of 193 observations and 5 variables.
+
+```{r libraries, echo = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(rnaturalearth)
+library(scales)
+library(plotly)
+library(DT)
+```
+
+```{r datadictionary, echo = FALSE, warning = FALSE, message = FALSE}
+tab <- data.frame(Variable = c("country",  
+                                      "beer_servings",  
+                                      "spirit_servings",  
+                                      "wine-servings", 
+                                      "total_litres_of_pure_alcohol"),
+                  Type = c("Character",
+                           "Numeric",
+                           "Numeric",
+                           "Numeric", 
+                           "Numeric"),
+                  Description = c("Global country name",
+                                  "Consumption of beer",
+                                  "Consumption of spirit",
+                                  "Wine consumption",
+                                  "Total (sum of recorded and unrecorded alcohol) amount of alcohol consumed per person (15 years of age or older) in litres of pure alcohol")) 
+  
+  tab %>%
+  kable(format = "html", col.names = c("Variable Name", "Type of the variable", "Description"), caption = "Variable description")
+```
+
+## Propotion of alcohol consumption 
+```{r data, echo = FALSE, message = FALSE, warning = FALSE}
+url <- 'https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2018/2018-06-26/week13_alcohol_global.csv'
+alcohol <- readr::read_csv(url)
+
+alcohol$country <- gsub("Russian Federation","Russia", alcohol$country)
+```
+
+```{r proportiondata, echo = FALSE, message = FALSE, warning = FALSE}
+proportion <- alcohol %>%
+  mutate(alcohol_proportion = alcohol$total_litres_of_pure_alcohol*100/sum(alcohol$total_litres_of_pure_alcohol))
+
+```
+
+```{r}
+#| label: fig-p1
+#| fig-cap: Overal view of propotion of alcohol consumption
+#| fig-align: center
+#| warning: false
+#| echo: false
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+per_map <- proportion %>% left_join(world, by = c("country" = "name"))
+
+p <- per_map %>% 
+  ggplot() +
+  geom_sf(mapping = aes(geometry = geometry, 
+                        fill = alcohol_proportion)) +
+  scale_fill_distiller(palette = "Paired", direction = 1) +
+  labs(x = "Longitude",
+       y = "Latitude") +
+  #guides(fill = guide_legend(title = "Proportion of alcohol consumption_%")) +
+  theme(legend.position = "bottom")
+p
+
+```
+In @fig-p1 we can see a world map of the share of alcohol consumption by country. The conclusion that can be drawn from this is that Oceania and Europe are two continents that contain countries with a high alcohol consumption proportion compared to the rest of the world.
+
+
+Let's focus more on the top 10 countries in alcohol consumption.
+```{r}
+#| label: fig-p2
+#| fig-cap: Top10 countries with highest percentage of alcohol consumption
+#| fig-align: center
+#| warning: false
+#| echo: false
+
+top10 <- proportion %>% 
+  arrange(desc(alcohol_proportion)) %>%
+  head(10) %>% 
+  mutate(order = fct_reorder(country, alcohol_proportion))
+
+p2 <- top10 %>% 
+  ggplot(aes(
+    x = order,
+    y = alcohol_proportion/100,
+    fill = country
+  )) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = round(alcohol_proportion, digit = 3)),
+            col = "steelblue",
+            hjust = 1.2) +
+  scale_y_continuous(labels = percent) +
+  scale_fill_brewer(palette = "Spectral", direction = 1) +
+  guides(fill = F) +
+  labs(x = "Country",
+       y = "Percentage of alcohol consumption")
+
+ggplotly(p2)
+
+```
+
+@fig-p2 shows the top 10 countries in the world in terms of alcohol consumption, with Belarus firmly in first place, followed by Lithuania. The vast majority of the countries are located in continental Europe. 
+
+In 2019, 8.4% of EU adults drank alcohol daily, 28.8% drank weekly, 22.8% drank monthly, and 26.2% never drank alcohol or never drank alcohol in the past 12 months (eurostat, 2021). Overall, there are significant differences in alcohol consumption levels between EU+ countries. Consumption is lower in the northern and southern parts of the EU+.
+
+## Beer consumption in the top 10 countries
+
+```{r}
+#| label: fig-p3
+#| fig-cap: Beer consumption by country compared to world average consumption 
+#| fig-align: center
+#| warning: false
+#| echo: false
+world_ave <- alcohol %>%
+  mutate(world_beer = mean(beer_servings)) %>%
+  mutate(world_spirit = mean(spirit_servings)) %>%
+  mutate(world_wine = mean(wine_servings)) %>%
+  filter(country %in% c("Belarus", 
+                        "Lithuania", 
+                        "Andorra", 
+                        "Grenada",
+                        "Czech Republic",
+                        "France",
+                        "Russia",
+                        "Ireland", 
+                        "Luxembourg", 
+                        "Slovakia"))
+
+p3 <- world_ave %>%
+  ggplot(aes(x = country,
+             y = beer_servings,
+             fill =  country)) +
+  geom_col() +
+  geom_hline(yintercept = world_ave$world_beer, 
+             color = "red",
+             lty = 5) +
+  geom_text(aes(x = 5, y = 115),
+            label ="World average beer consumption = 106.16 L",
+            angle = 0,
+            colour = "red",
+            size = 4) +
+  geom_text(aes(label = beer_servings),
+            col = "steelblue",
+            hjust = 1.2) +
+  scale_fill_brewer(palette = "BrBG", direction = 1) +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 0.5, 
+                                   vjust = 0.5))
+ggplotly(p3)
+```
+
+Beer is one of the world's oldest beverages, invented before the written word, and is the most widely consumed alcoholic beverage on the planet. We can see in @fig-p3 that beer consumption in the top 10 countries in terms of alcohol consumption is much higher than the world average (about 106 liters). The Czech Republic, Iceland, and Lithuania are almost three times higher than the world average. 
+
+The largest beer-consuming country in Europe is the Czech Republic, with a per capita consumption of 181.7 liters in 2020 ("Beer consumption by country 2022," n.d.). Beer in the Czech Republic is cheaper than bottled water (a half-liter is usually $1), which may explain why the country is number one in the world in terms of beer consumption.
+
+## Spirit consumption in the top 10 countries
+```{r}
+#| label: fig-p4
+#| fig-cap: Spirit consumption by country compared to world average consumption 
+#| fig-align: center
+#| warning: false
+#| echo: false
+
+p4 <- world_ave %>%
+  ggplot(aes(x = country,
+             y = spirit_servings,
+             fill =  country)) +
+  geom_col() +
+  geom_hline(yintercept = world_ave$world_spirit, 
+             color = "red",
+             lty = 5) +
+  geom_text(aes(x = 5, y = 90),
+            label ="World average spirit consumption = 80.99 L",
+            angle = 0,
+            colour = "red",
+            size = 4) +
+  geom_text(aes(label = spirit_servings),
+            col = "steelblue",
+            hjust = 1.2) +
+  scale_fill_brewer(palette = "Paired", direction = 1) +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 0.5, 
+                                   vjust = 0.5))
+ggplotly(p4)
+```
+
+@fig-p4 illustrates the consumption of spirits in these 10 countries. Among them, Grenada (a Latin American island country) and Belarus have values much higher than the world average for spirits consumption. The preference for vodka is sometimes only associated with the Slavic countries of Central and Eastern Europe, which is well documented since they are the historical home of vodka (Poland and Russia are the countries most often associated with the invention of this drink). Alex (1986) revealed that, in addition to being a popular spirit, another characteristic of the vodka belt is the higher incidence of binge drinking compared to other parts of Europe. higher incidence.
+
+
+## Wine consumption in the top 10 countries
+```{r}
+#| label: fig-p5
+#| fig-cap: Wine consumption by country compared to world average consumption 
+#| fig-align: center
+#| warning: false
+#| echo: false
+
+p5 <- world_ave %>%
+  ggplot(aes(x = country,
+             y = wine_servings,
+             fill =  country)) +
+  geom_col() +
+  geom_hline(yintercept = world_ave$world_wine, 
+             color = "red",
+             lty = 5) +
+  geom_text(aes(x = 5, y = 58),
+            label ="World average wine consumption = 49.45 L",
+            angle = 0,
+            colour = "red",
+            size = 4) +
+  geom_text(aes(label = wine_servings),
+            col = "steelblue",
+            hjust = 1.2) +
+  scale_fill_brewer(palette = "PRGn", direction = 1) +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 0.5, 
+                                   vjust = 0.5))
+ggplotly(p5)
+```
+
+For wine consumption, the priority must be France, the home of wine as we know it, and this is the message conveyed in @fig-p5, France's wine consumption is about 5 times more than the world average. France has the largest wine-consuming population in Europe, with wine consumption of 25.2 million hectoliters in 2021. On the other side, not all countries surpass the world average in wine consumption, Belarus and Grenada are exceptions.
+
+In general, the top 10 countries in the world in terms of alcohol consumption are basically well above the world average in terms of beer, spirits, and wine consumption.
+
+## Raw data
+
+```{r originaldata, echo = FALSE}
+tabledata <- alcohol
+    DT::datatable(tabledata, 
+                  options = list(pageLength = 8, 
+                                 autoWidth = TRUE))
+```
+
+
+## References
+
+*Alcohol.* (2022, May 9). WHO | World Health Organization. https://www.who.int/news-room/fact-sheets/detail/alcohol
+
+*One in twelve adults in the EU consumes alcohol every day.* (2021, August 6). https://ec.europa.eu/eurostat/web/products-eurostat-news/-/edn-20210806-1
+
+*Beer consumption by country 2022. (n.d.). * 2022 World Population by Country. https://worldpopulationreview.com/country-rankings/beer-consumption-by-country
+
+Alex de Jonge, *"Stalin and the Shaping of the Soviet Union",* Collins, (1986), ISBN 0-688-04730-0, the relevant excerpt online Archived 28 September 2007 at the Wayback Machine
+
+Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” Journal of Open Source Software, 4(43), 1686. doi:10.21105/joss.01686 https://doi.org/10.21105/joss.01686.
+
+H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.
+
+Xie Y, Cheng J, Tan X (2022). DT: A Wrapper of the JavaScript Library ‘DataTables’. R package version 0.24, https://CRAN.R-project.org/package=DT.
+
+C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC Florida, 2020.
+
+Hao Zhu (2021). kableExtra: Construct Complex Table with ‘kable’ and Pipe Syntax. R package version 1.3.4. https://CRAN.R-project.org/package=kableExtra
+
+Hadley Wickham and Dana Seidel (2022). scales: Scale Functions for Visualization. R package version
+1.2.1. https://CRAN.R-project.org/package=scales
+
+Andy South (2017). rnaturalearth: World Map Data from Natural Earth. R package version 0.1.0.
+https://CRAN.R-project.org/package=rnaturalearth
