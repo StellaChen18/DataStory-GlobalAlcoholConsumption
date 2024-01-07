@@ -1,0 +1,73 @@
+---
+title: "Dissecting story by Guanru Chen"
+author: "Yunzhi Chen"
+format: 
+  html:
+    toc: true
+    code-fold: true
+---
+
+::: {.callout-note}
+
+Aim to start/revise this section during the tutorial and/or after **Tue 11th October 2022 5PM** with final version by **Fri 14th October 2022**.
+
+:::
+
+## Goal
+
+### Who is the target audience?
+
+The target audience for this data story is honey farmers or honey consumers who want to learn about honey production and unit prices in the United States from 1998 to 2012.
+
+### What is the intended message?
+
+The data report conveys information on the changing trend in total annual honey production by state in the United States from 1998 to 2012, the top 10 states in terms of total production, and trends in average production, unit price and value of honey per year.
+
+### Why should the audience care or what should the audience do with the message?
+
+This is because the changes in honey production and unit prices are a revealing insight into the U.S. honey industry, showing relevant honey information over time, which can lead to an inquiry into what influences changes in honey production.
+
+## Story 
+
+### What type of story was it?
+
+This data story uses the type of "change over time" and partial "drill down". Four of the six graphs throughout the story reflect trends in the variables over time. In the first part, the author first plots the trend in average production for all states over all years, and then visualize the 10 highest producing states, which is the drill-down part.
+
+### Was the story interesting to you?
+
+Yes, the story was interesting to me. The author starts with an video to bring a light-hearted atmosphere to the reader, and later presents the data in multiple visualizations.
+
+## Selected data
+
+### Was the right data used for the intended message? 
+
+Yes, it was.
+
+### What are the limitations of the data used for the story?
+
+The year coverage of the data can be extended to the most recent years, after all, 2012 is a long time ago, and it is possible that the production of honey has changed significantly in recent years compared to the previous years.
+
+### What data would have made the message more convincing?
+
+I think for the last part, the authors tried to analyze the changes of honey production, unit price and value separately and found out the trend of each variable over time as well as drew the corresponding liner model. but I think another one can be added to explore whether there is an relationship between each pair of the three variables and calculate the data to support the hypothesis.
+
+## Selected visualisation
+
+### Was the visualisation effective for the intended message?
+
+Yes, it was.
+
+### What other visualisations could be used?
+
+It is possible to apply some map visualization as it relates to the information of each state, which is more visual.
+
+## Aesthetic design
+
+### Are the choices of aesthetic elements helpful in arousing interest without overly hampering cognition?
+
+I think Guanru did a great job with Figure 3 because it not only shows the trend of the top producing states over time, but also adds dots that distinguish the color of the line and identifies the states by name, which is a clear visual representation of the information.
+
+### How could the aesthetic design be improved?
+
+I think the part that can be improved is that the CSS part can be changed appropriately, such as background color, title color, etc., to make the data story more attractive.
+
